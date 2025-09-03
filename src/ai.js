@@ -1,16 +1,36 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+// helpers/openrouter.js
+const generate = async ({query,mode}) => {
+  let personality = "professional assistant";
+  if(mode === "Chill Dude"){
+    personality = "chill dude"
+  }
+  if(mode === "Girly Girl"){
+    personality = "girly girl"
+  }
+  try {
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + process.env.OPENROUTER_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "deepseek/deepseek-chat-v3.1:free", 
+        messages: [
+          {
+            role: "user",
+            content: ` always give the answers in TL;DR form,try to keep it as  concise as possible, answer should not exceed 50 words ,better if it is less than 50 words and you dont have to specify the reply as TLDR, and remember you are a ${personality} and answer like a ${personality} : ${query} `,
+          },
+        ],
+      }),
+    });
 
-const generate = async({query})=>{
-    const genAI = new GoogleGenerativeAI( process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({model : "gemini-1.5-flash"});
-    try {
-        const result = await model.generateContent(`always give the answers in TL;DR form,try to keep it as  concise as possible and you dont have to specify the reply as TL;DR, and remeber you are a chill dude : ${query}`);
-        console.log("result : ",result.response.text())
-        const reply = result.response.text();
-        return reply;
-     } catch (error) {
-        console.log("error :",error)
-    }
-}
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || "No reply from model";
+  } catch (error) {
+    console.error("OpenRouter Error:", error);
+    return "Something went wrong with OpenRouter";
+  }
+};
 
-export {generate}
+export { generate };
